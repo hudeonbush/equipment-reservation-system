@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.db
+venv/
+.venv/
+env/
+
+# 本地运行产物
+*.log
+
+# 密钥 / 本地数据库 / 生成的管理员密码（切勿提交）
+.env
+ADMIN_PASSWORD.txt
+admin.db
+app.db
+equipment_reservation.db
+
+# 编辑器
+.idea/
+.vscode/
+.DS_Store
+
+# 发布/部署无关
+node_modules/

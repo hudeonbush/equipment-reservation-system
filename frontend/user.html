@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>预约人门户 · 实验设备预约系统</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">实验设备预约<span> · 预约人门户</span></div>
+    <div class="spacer"></div>
+    <span class="who" id="who"></span>
+    <button class="btn danger sm" onclick="logout()">退出登录</button>
+  </div>
+
+  <div class="wrap">
+    <div class="page-title">预约人门户</div>
+    <div class="sub">浏览可用设备并提交预约 · 查看我的预约进度</div>
+
+    <!-- 通知公告（借鉴毕设公告模块） -->
+    <div id="announceBox" class="announce-box" style="display:none"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-p="browse" onclick="switchPanel('browse')">设备查询</div>
+      <div class="tab" data-p="favorites" onclick="switchPanel('favorites')">我的收藏</div>
+      <div class="tab" data-p="mine" onclick="switchPanel('mine')">我的预约</div>
+      <div class="tab" data-p="repairs" onclick="switchPanel('repairs')">我的报修</div>
+    </div>
+
+    <!-- 设备查询 -->
+    <div class="panel active" id="p-browse">
+      <div class="toolbar">
+        <input class="search" id="bKw" placeholder="搜索 名称/型号/位置/负责人" oninput="loadEquip()" />
+        <select id="bCat" onchange="loadEquip()">
+          <option value="">全部分类</option>
+        </select>
+        <select id="bStatus" onchange="loadEquip()">
+          <option value="available">仅看可用</option>
+          <option value="">全部状态</option>
+          <option value="maintenance">维护中</option>
+          <option value="disabled">停用</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr>
+          <th>收藏</th><th>名称</th><th>分类</th><th>型号</th><th>位置</th><th>状态</th><th>负责人</th><th>描述</th><th>操作</th>
+        </tr></thead>
+        <tbody id="browseBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 我的收藏（借鉴佰能「设备收藏」红心） -->
+    <div class="panel" id="p-favorites">
+      <div class="toolbar">
+        <span class="mini-hint">点设备旁的 ♥ 收藏常用设备，便于快速预约</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>收藏</th><th>名称</th><th>分类</th><th>型号</th><th>位置</th><th>状态</th><th>负责人</th><th>描述</th><th>操作</th>
+        </tr></thead>
+        <tbody id="favBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 我的预约 -->
+    <div class="panel" id="p-mine">
+      <div class="sub-tabs">
+        <div class="sub-tab active" data-v="" onclick="pickMineCat('')">全部</div>
+        <div class="sub-tab" data-v="active" onclick="pickMineCat('active')">进行中</div>
+        <div class="sub-tab" data-v="history" onclick="pickMineCat('history')">历史</div>
+      </div>
+      <div class="toolbar">
+        <input class="search" id="mKw" placeholder="搜索 设备/用途" oninput="loadMine()" />
+        <select id="mStatus" onchange="loadMine()">
+          <option value="">全部状态</option>
+          <option value="pending">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="in_use">使用中</option>
+          <option value="rejected">已驳回</option>
+          <option value="cancelled">已取消</option>
+          <option value="used">已完成</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>设备</th><th>开始</th><th>结束</th><th>用途</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody id="mineBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 我的报修（借鉴毕设设备报障流程） -->
+    <div class="panel" id="p-repairs">
+      <div class="toolbar">
+        <span class="mini-hint">设备故障可在此报修，报修后设备将暂停预约等待维修</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>设备</th><th>故障描述</th><th>状态</th><th>处理人</th><th>处理说明</th><th>提交时间</th>
+        </tr></thead>
+        <tbody id="repairBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 预约弹窗 -->
+  <div class="modal-mask" id="resModal">
+    <div class="modal wide">
+      <h3>预约：<span id="resEqName"></span></h3>
+      <input type="hidden" id="resEqId" />
+      <!-- 设备排期：预约冲突可视化（借鉴 NEMO 日历预约） -->
+      <div class="schedule-box">
+        <div class="schedule-title">设备排期 <span class="mini-hint" id="scheduleHint"></span></div>
+        <div id="scheduleList" class="schedule-list"></div>
+      </div>
+      <div class="field"><label>开始时间</label><input id="resStart" type="datetime-local" /></div>
+      <div class="field"><label>结束时间</label><input id="resEnd" type="datetime-local" /></div>
+      <div class="field"><label>用途说明</label><textarea id="resPurpose" rows="3" placeholder="如：样品表面形貌表征"></textarea></div>
+      <div class="msg" id="resMsg"></div>
+      <div class="acts">
+        <button class="btn" onclick="closeResModal()">取消</button>
+        <button class="btn primary" onclick="submitRes()">提交预约</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设备详情弹窗 -->
+  <div class="modal-mask" id="detailModal">
+    <div class="modal wide">
+      <h3 id="detailName">设备详情</h3>
+      <div class="detail-grid" id="detailInfo"></div>
+      <div class="page-title" style="font-size:15px;margin:16px 0 10px">设备排期（未完成预约）</div>
+      <div id="detailSchedule"></div>
+      <div class="page-title" style="font-size:15px;margin:16px 0 10px">最近使用记录</div>
+      <div id="detailHistory"></div>
+      <div class="acts">
+        <button class="btn" onclick="closeDetailModal()">关闭</button>
+        <button class="btn" style="background:#e67e22;color:#fff" onclick="openRepairModal()">报修此设备</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设备报修弹窗（借鉴毕设设备报障：报修后设备暂停预约） -->
+  <div class="modal-mask" id="repairModal">
+    <div class="modal">
+      <h3>设备报修：<span id="repairEqName"></span></h3>
+      <input type="hidden" id="repairEqId" />
+      <div class="field"><label>故障描述 *</label><textarea id="repairIssue" rows="4" placeholder="请描述故障现象，如：无法开机、成像异常…"></textarea></div>
+      <div class="msg" id="repairMsg"></div>
+      <div class="acts">
+        <button class="btn" onclick="closeRepairModal()">取消</button>
+        <button class="btn primary" onclick="submitRepair()">提交报修</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/user.js"></script>
+</body>
+</html>

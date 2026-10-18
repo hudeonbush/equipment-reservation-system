@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理后台 · 实验设备预约系统</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- 管理员独立登录闸门：未登录只显示此登录框，预约人前台看不到任何管理员入口 -->
+  <div class="auth-wrap" id="adminLogin" style="display:none">
+    <div class="auth-card">
+      <h2>管理后台登录</h2>
+      <div class="lead">Equipment Reservation · Admin</div>
+      <form class="auth-form active" id="adminLoginForm" onsubmit="return adminDoLogin(event)">
+        <div class="field">
+          <label>管理员账号</label>
+          <input id="adminUser" placeholder="请输入管理员账号" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <input id="adminPwd" type="password" placeholder="请输入密码" autocomplete="current-password" />
+        </div>
+        <div class="msg" id="adminLoginMsg"></div>
+        <button class="btn primary" style="width:100%" type="submit">登 录</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminDash" style="display:none">
+  <div class="topbar">
+    <div class="logo">实验设备预约<span> · 管理后台</span></div>
+    <div class="spacer"></div>
+    <span class="who" id="who"></span>
+    <button class="btn danger sm" onclick="logout()">退出登录</button>
+  </div>
+
+  <div class="wrap">
+    <div class="page-title">管理后台</div>
+    <div class="sub">设备管理 · 预约审批 · 账号管理 · 数据看板</div>
+
+    <div class="grid cards" style="margin-bottom:20px">
+      <div class="card"><div class="k">设备总数</div><div class="v" id="stEquip">-</div></div>
+      <div class="card"><div class="k">预约账号</div><div class="v" id="stUsers">-</div></div>
+      <div class="card"><div class="k">预约总数</div><div class="v" id="stRes">-</div></div>
+      <div class="card"><div class="k">待审核预约</div><div class="v" id="stPending">-</div></div>
+      <div class="card"><div class="k">待审核用户</div><div class="v" id="stPendingUsers">-</div></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-p="equip" onclick="switchPanel('equip')">设备管理</div>
+      <div class="tab" data-p="approve" onclick="switchPanel('approve')">预约审批</div>
+      <div class="tab" data-p="repairs" onclick="switchPanel('repairs')">设备报修<span class="badge" id="repairBadge" style="display:none"></span></div>
+      <div class="tab" data-p="users" onclick="switchPanel('users')">账号管理</div>
+      <div class="tab" data-p="notice" onclick="switchPanel('notice')">通知公告</div>
+      <div class="tab" data-p="board" onclick="switchPanel('board')">数据看板</div>
+    </div>
+
+    <!-- 设备管理 -->
+    <div class="panel active" id="p-equip">
+      <div class="toolbar">
+        <input class="search" id="eqKw" placeholder="搜索 名称/型号/位置/负责人" oninput="loadEquip()" />
+        <select id="eqStatus" onchange="loadEquip()">
+          <option value="">全部状态</option>
+          <option value="available">可用</option>
+          <option value="maintenance">维护中</option>
+          <option value="disabled">停用</option>
+        </select>
+        <div class="spacer"></div>
+        <button class="btn primary" onclick="openEquipModal()">+ 新增设备</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>名称</th><th>分类</th><th>型号</th><th>位置</th><th>状态</th><th>负责人</th><th>操作</th>
+        </tr></thead>
+        <tbody id="equipBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 预约审批 -->
+    <div class="panel" id="p-approve">
+      <div class="toolbar">
+        <input class="search" id="resKw" placeholder="搜索 预约人/设备/用途" oninput="loadReservations()" />
+        <select id="resStatus" onchange="loadReservations()">
+          <option value="">全部状态</option>
+          <option value="pending">待审核</option>
+          <option value="approved">已通过</option>
+          <option value="rejected">已驳回</option>
+          <option value="cancelled">已取消</option>
+          <option value="used">已完成</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>设备</th><th>预约人</th><th>类型</th><th>开始</th><th>结束</th><th>用途</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody id="resBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 设备报修（借鉴毕设设备报障流程：处理中/已修复，修复后设备恢复预约） -->
+    <div class="panel" id="p-repairs">
+      <div class="toolbar">
+        <select id="rpStatus" onchange="loadRepairs()">
+          <option value="">全部状态</option>
+          <option value="pending">待处理</option>
+          <option value="handling">处理中</option>
+          <option value="fixed">已修复</option>
+          <option value="closed">已关闭</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="mini-hint">用户报修后设备自动暂停预约（维护中），修复后恢复可用</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>设备</th><th>报修人</th><th>故障描述</th><th>状态</th><th>提交时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="repairAdminBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 通知公告（借鉴毕设公告模块） -->
+    <div class="panel" id="p-notice">
+      <div class="toolbar">
+        <div class="spacer"></div>
+        <button class="btn primary" onclick="openNoticeModal()">+ 发布公告</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>标题</th><th>内容</th><th>状态</th><th>发布时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="noticeBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 账号管理（借鉴佰能「用户管理」：审核激活/禁用/重置密码） -->
+    <div class="panel" id="p-users">
+      <div class="toolbar">
+        <input class="search" id="uKw" placeholder="搜索 用户名/姓名/单位/院系" oninput="loadUsers()" />
+        <select id="uType" onchange="loadUsers()">
+          <option value="">全部类型</option>
+          <option value="internal">校内用户</option>
+          <option value="external">校外用户</option>
+        </select>
+        <select id="uStatus" onchange="loadUsers()">
+          <option value="">全部状态</option>
+          <option value="pending">待审核</option>
+          <option value="active">正常</option>
+          <option value="disabled">已禁用</option>
+          <option value="rejected">已驳回</option>
+        </select>
+        <div class="spacer"></div>
+        <span class="mini-hint">校外用户注册后需在此审核激活</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>用户名</th><th>姓名</th><th>类型</th><th>单位/院系</th><th>学号/导师</th><th>状态</th><th>注册时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="userBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 数据看板 -->
+    <div class="panel" id="p-board">
+      <div class="page-title" style="font-size:16px;margin-bottom:12px">当前使用中的设备</div>
+      <table style="margin-bottom:18px">
+        <thead><tr><th>设备</th><th>使用者</th><th>类型</th><th>签到时间</th><th>预约时段</th></tr></thead>
+        <tbody id="inUseBody"></tbody>
+      </table>
+      <div class="two-col">
+        <div class="bars">
+          <div class="page-title" style="font-size:16px;margin-bottom:14px">设备使用 TOP 5</div>
+          <div id="topEquip"></div>
+        </div>
+        <div class="bars">
+          <div class="page-title" style="font-size:16px;margin-bottom:14px">预约状态分布</div>
+          <div id="statusDist"></div>
+          <div class="page-title" style="font-size:16px;margin:18px 0 14px">设备状态分布</div>
+          <div id="equipDist"></div>
+        </div>
+      </div>
+      <div class="page-title" style="font-size:16px;margin:20px 0 12px">近期预约</div>
+      <table>
+        <thead><tr><th>设备</th><th>预约人</th><th>类型</th><th>时间</th><th>状态</th></tr></thead>
+        <tbody id="recentBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 设备编辑弹窗 -->
+  <div class="modal-mask" id="eqModal">
+    <div class="modal">
+      <h3 id="eqModalTitle">新增设备</h3>
+      <input type="hidden" id="eqId" />
+      <div class="field"><label>名称 *</label><input id="eqName" /></div>
+      <div class="field"><label>分类</label><input id="eqCategory" placeholder="如：显微镜 / 离心机 / 光谱仪" /></div>
+      <div class="field"><label>型号</label><input id="eqModel" /></div>
+      <div class="field"><label>位置</label><input id="eqLocation" /></div>
+      <div class="field"><label>状态</label>
+        <select id="eqState">
+          <option value="available">可用</option>
+          <option value="maintenance">维护中</option>
+          <option value="disabled">停用</option>
+        </select>
+      </div>
+      <div class="field"><label>负责人</label><input id="eqManager" /></div>
+      <div class="field"><label>描述</label><textarea id="eqDesc" rows="3"></textarea></div>
+      <div class="msg" id="eqMsg"></div>
+      <div class="acts">
+        <button class="btn" onclick="closeEqModal()">取消</button>
+        <button class="btn primary" onclick="saveEquip()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 驳回理由弹窗 -->
+  <div class="modal-mask" id="rejModal">
+    <div class="modal">
+      <h3>驳回预约 #<span id="rejId"></span></h3>
+      <input type="hidden" id="rejRid" />
+      <div class="field"><label>驳回理由（选填）</label><textarea id="rejNote" rows="3"></textarea></div>
+      <div class="acts">
+        <button class="btn" onclick="closeRejModal()">取消</button>
+        <button class="btn danger" onclick="confirmReject()">确认驳回</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重置密码弹窗 -->
+  <div class="modal-mask" id="pwdModal">
+    <div class="modal">
+      <h3>重置密码：<span id="pwdUserName"></span></h3>
+      <input type="hidden" id="pwdUid" />
+      <div class="field"><label>新密码（至少 6 位）</label><input id="pwdNew" type="text" placeholder="请输入新密码" /></div>
+      <div class="acts">
+        <button class="btn" onclick="closePwdModal()">取消</button>
+        <button class="btn primary" onclick="confirmResetPwd()">确认重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 报修处理弹窗 -->
+  <div class="modal-mask" id="rpHandleModal">
+    <div class="modal">
+      <h3>处理报修 #<span id="rpHandleId"></span>：<span id="rpHandleEq"></span></h3>
+      <input type="hidden" id="rpHandleRid" />
+      <div class="field"><label>处理说明</label><textarea id="rpHandleNote" rows="3" placeholder="如：已更换传感器，测试正常"></textarea></div>
+      <div class="msg" id="rpMsg"></div>
+      <div class="acts">
+        <button class="btn" onclick="closeRpHandleModal()">取消</button>
+        <button class="btn" onclick="submitRpHandle('handling')">开始处理</button>
+        <button class="btn primary" onclick="submitRpHandle('fixed')">标记已修复</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发布公告弹窗 -->
+  <div class="modal-mask" id="noticeModal">
+    <div class="modal">
+      <h3>发布公告</h3>
+      <div class="field"><label>标题 *</label><input id="ntTitle" placeholder="如：国庆期间实验室开放时间调整" /></div>
+      <div class="field"><label>内容</label><textarea id="ntContent" rows="4" placeholder="公告详细内容（选填）"></textarea></div>
+      <div class="msg" id="ntMsg"></div>
+      <div class="acts">
+        <button class="btn" onclick="closeNoticeModal()">取消</button>
+        <button class="btn primary" onclick="saveNotice()">发布</button>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /adminDash -->
+
+  <script src="/js/common.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

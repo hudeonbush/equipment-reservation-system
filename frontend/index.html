@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>实验设备预约系统 · 登录</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <h2>实验设备预约系统</h2>
+      <div class="lead">Equipment Reservation System</div>
+
+      <div class="auth-tabs">
+        <div class="at active" data-tab="login" onclick="switchTab('login')">登录</div>
+        <div class="at" data-tab="register" onclick="switchTab('register')">注册预约账号</div>
+      </div>
+
+      <!-- 登录 -->
+      <form class="auth-form active" id="loginForm" onsubmit="return doLogin(event)">
+        <div class="field">
+          <label>用户名</label>
+          <input id="loginUser" placeholder="请输入用户名" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <input id="loginPwd" type="password" placeholder="请输入密码" autocomplete="current-password" />
+        </div>
+        <div class="msg" id="loginMsg"></div>
+        <button class="btn primary" style="width:100%" type="submit">登 录</button>
+        <div class="forgot-row">
+          <a href="javascript:void(0)" onclick="showForgot()">忘记密码？</a>
+        </div>
+      </form>
+
+      <!-- 管理员入口 -->
+      <div class="admin-entry">
+        <a href="/admin.html">管理员入口 →</a>
+      </div>
+
+      <!-- 忘记密码 -->
+      <form class="auth-form" id="forgotForm" onsubmit="return doForgot(event)">
+        <div class="back-row"><a href="javascript:void(0)" onclick="switchTab('login')">← 返回登录</a></div>
+        <div class="field">
+          <label>注册邮箱</label>
+          <input id="fpEmail" placeholder="请输入注册时使用的邮箱" />
+        </div>
+        <div class="field">
+          <label>邮箱验证码</label>
+          <div class="code-row">
+            <input id="fpCode" placeholder="6 位验证码" maxlength="6" />
+            <button type="button" class="btn sm" id="fpSendBtn" onclick="sendForgotCode()">发送验证码</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>新密码</label>
+          <input id="fpPwd" type="password" placeholder="至少 6 个字符" />
+        </div>
+        <div class="msg" id="fpMsg"></div>
+        <button class="btn primary" style="width:100%" type="submit">重置密码</button>
+      </form>
+
+      <!-- 注册 -->
+      <form class="auth-form" id="registerForm" onsubmit="return doRegister(event)">
+        <div class="field">
+          <label>用户类型 *</label>
+          <div class="seg" id="regTypeSeg">
+            <div class="seg-item active" data-t="internal" onclick="pickRegType('internal')">校内用户</div>
+            <div class="seg-item" data-t="external" onclick="pickRegType('external')">校外用户</div>
+          </div>
+          <div class="mini-hint" id="regTypeHint">校内用户注册后即可预约；校外用户需管理员审核激活后预约</div>
+        </div>
+        <div class="field">
+          <label>用户名 *</label>
+          <input id="regUser" placeholder="至少 3 个字符" />
+        </div>
+        <div class="field">
+          <label>密码 *</label>
+          <input id="regPwd" type="password" placeholder="至少 6 个字符" />
+        </div>
+        <div class="field">
+          <label>姓名 *</label>
+          <input id="regName" placeholder="如：张三" />
+        </div>
+        <div class="field">
+          <label>邮箱 *</label>
+          <input id="regEmail" placeholder="用于验证与找回密码，如 zhangsan@xx.com" />
+        </div>
+        <div class="field">
+          <label>邮箱验证码 *</label>
+          <div class="code-row">
+            <input id="regCode" placeholder="6 位验证码" maxlength="6" />
+            <button type="button" class="btn sm" id="regSendBtn" onclick="sendRegCode()">发送验证码</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>手机号（选填）</label>
+          <input id="regPhone" placeholder="如：13800000000" />
+        </div>
+        <!-- 校内字段 -->
+        <div class="fgroup" id="fInternal">
+          <div class="field">
+            <label>学号 / 工号</label>
+            <input id="regStudentId" placeholder="如：20230001" />
+          </div>
+          <div class="field">
+            <label>院系 / 部门</label>
+            <input id="regDept" placeholder="如：材料科学与工程学院" />
+          </div>
+          <div class="field">
+            <label>导师（选填）</label>
+            <input id="regSupervisor" placeholder="如：王教授" />
+          </div>
+        </div>
+        <!-- 校外字段 -->
+        <div class="fgroup" id="fExternal" style="display:none">
+          <div class="field">
+            <label>单位名称 *</label>
+            <input id="regOrg" placeholder="如：XX科技有限公司 / XX大学" />
+          </div>
+          <div class="field">
+            <label>单位类型</label>
+            <select id="regOrgType">
+              <option value="">请选择</option>
+              <option value="高校">高校</option>
+              <option value="科研院所">科研院所</option>
+              <option value="企业">企业</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>导师 / 课题负责人（选填）</label>
+            <input id="regSup2" placeholder="如：李教授" />
+          </div>
+        </div>
+        <div class="msg" id="regMsg"></div>
+        <button class="btn primary" style="width:100%" type="submit">注 册</button>
+      </form>
+
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll(".auth-tabs .at").forEach((e) =>
+        e.classList.toggle("active", e.dataset.tab === tab));
+      document.getElementById("loginForm").classList.toggle("active", tab === "login");
+      document.getElementById("registerForm").classList.toggle("active", tab === "register");
+      document.getElementById("forgotForm").classList.toggle("active", tab === "forgot");
+      document.querySelector(".auth-tabs").style.display = tab === "forgot" ? "none" : "";
+      if (tab === "login") { const m = document.getElementById("fpMsg"); m.className = "msg"; }
+    }
+
+    function showForgot() { switchTab("forgot"); }
+
+    function pickRegType(t) {
+      document.querySelectorAll("#regTypeSeg .seg-item").forEach((e) =>
+        e.classList.toggle("active", e.dataset.t === t));
+      document.getElementById("fInternal").style.display = t === "internal" ? "block" : "none";
+      document.getElementById("fExternal").style.display = t === "external" ? "block" : "none";
+      document.getElementById("regTypeHint").textContent = t === "internal"
+        ? "校内用户注册后即可预约；校外用户需管理员审核激活后预约"
+        : "校外用户注册后需管理员审核激活，激活后即可预约";
+    }
+
+    // 发送验证码（60 秒倒计时）
+    let codeTimer = null;
+    function startCountdown(btnId) {
+      const btn = document.getElementById(btnId);
+      let sec = 60;
+      btn.disabled = true;
+      btn.textContent = sec + "s 后重发";
+      codeTimer = setInterval(() => {
+        sec--;
+        if (sec <= 0) {
+          clearInterval(codeTimer);
+          btn.disabled = false;
+          btn.textContent = "发送验证码";
+        } else {
+          btn.textContent = sec + "s 后重发";
+        }
+      }, 1000);
+    }
+
+    async function sendRegCode() {
+      const email = document.getElementById("regEmail").value.trim();
+      const msg = document.getElementById("regMsg");
+      msg.className = "msg";
+      if (!email || email.indexOf("@") < 0) { msg.className = "msg err"; msg.textContent = "请先填写有效邮箱"; return; }
+      try {
+        const r = await api("/api/send-code", { method: "POST", body: JSON.stringify({ email, purpose: "register" }) });
+        msg.className = "msg ok";
+        msg.textContent = r.message + (r.dev_mode ? "（开发模式，验证码：" + r.dev_code + "）" : "");
+        startCountdown("regSendBtn");
+      } catch (err) {
+        msg.className = "msg err"; msg.textContent = err.message;
+      }
+    }
+
+    async function sendForgotCode() {
+      const email = document.getElementById("fpEmail").value.trim();
+      const msg = document.getElementById("fpMsg");
+      msg.className = "msg";
+      if (!email || email.indexOf("@") < 0) { msg.className = "msg err"; msg.textContent = "请先填写注册邮箱"; return; }
+      try {
+        const r = await api("/api/send-code", { method: "POST", body: JSON.stringify({ email, purpose: "reset" }) });
+        msg.className = "msg ok";
+        msg.textContent = r.message + (r.dev_mode ? "（开发模式，验证码：" + r.dev_code + "）" : "");
+        startCountdown("fpSendBtn");
+      } catch (err) {
+        msg.className = "msg err"; msg.textContent = err.message;
+      }
+    }
+
+    async function doForgot(e) {
+      e.preventDefault();
+      const msg = document.getElementById("fpMsg");
+      msg.className = "msg";
+      try {
+        const r = await api("/api/reset-password", {
+          method: "POST",
+          body: JSON.stringify({
+            email: document.getElementById("fpEmail").value.trim(),
+            code: document.getElementById("fpCode").value.trim(),
+            new_password: document.getElementById("fpPwd").value,
+          }),
+        });
+        msg.className = "msg ok";
+        msg.textContent = r.message + "，正在跳转登录…";
+        setTimeout(() => switchTab("login"), 1000);
+      } catch (err) {
+        msg.className = "msg err"; msg.textContent = err.message;
+      }
+      return false;
+    }
+
+    async function doLogin(e) {
+      e.preventDefault();
+      const msg = document.getElementById("loginMsg");
+      msg.className = "msg";
+      try {
+        const data = await api("/api/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username: document.getElementById("loginUser").value.trim(),
+            password: document.getElementById("loginPwd").value,
+          }),
+        });
+        setAuth(data.token, data.user);
+        location.href = "/user.html";
+      } catch (err) {
+        msg.className = "msg err";
+        msg.textContent = err.message;
+      }
+      return false;
+    }
+
+    async function doRegister(e) {
+      e.preventDefault();
+      const msg = document.getElementById("regMsg");
+      msg.className = "msg";
+      const isExternal = document.querySelector("#regTypeSeg .seg-item.active").dataset.t === "external";
+      const realName = document.getElementById("regName").value.trim();
+      if (!realName) { msg.className = "msg err"; msg.textContent = "请填写姓名"; return; }
+      if (isExternal && !document.getElementById("regOrg").value.trim()) {
+        msg.className = "msg err"; msg.textContent = "校外用户请填写单位名称"; return;
+      }
+      try {
+        const r = await api("/api/register", {
+          method: "POST",
+          body: JSON.stringify({
+            username: document.getElementById("regUser").value.trim(),
+            password: document.getElementById("regPwd").value,
+            real_name: realName,
+            phone: document.getElementById("regPhone").value.trim(),
+            email: document.getElementById("regEmail").value.trim(),
+            email_code: document.getElementById("regCode").value.trim(),
+            user_type: isExternal ? "external" : "internal",
+            org_name: document.getElementById("regOrg").value.trim(),
+            org_type: document.getElementById("regOrgType").value,
+            department: document.getElementById("regDept").value.trim(),
+            student_id: document.getElementById("regStudentId").value.trim(),
+            supervisor: document.getElementById("regSupervisor").value.trim() || document.getElementById("regSup2").value.trim(),
+          }),
+        });
+        msg.className = "msg ok";
+        msg.textContent = r.message + "，正在跳转登录…";
+        setTimeout(() => switchTab("login"), 900);
+      } catch (err) {
+        msg.className = "msg err";
+        msg.textContent = err.message;
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>

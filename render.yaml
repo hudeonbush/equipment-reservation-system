@@ -1,0 +1,38 @@
+# Render Blueprint（免费一条龙：Web 服务 + PostgreSQL 云数据库）
+# 用法：推到 GitHub 后，在 Render Dashboard 选 "New > Blueprint"，
+# 填入本仓库地址即可自动创建 Web 服务 + 数据库 + 环境变量。
+# 详细步骤见 RENDER_DEPLOY.md
+services:
+  - type: web
+    name: equipment-reservation-system
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: equipment-db
+          property: connectionString
+      - key: ADMIN_PASSWORD
+        sync: false        # 部署后在控制台手动设置管理员初始密码
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      # 邮箱验证（真实发邮件）：部署后按 SUPABASE_SETUP.md 配置 SMTP_*
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+databases:
+  - name: equipment-db
+    plan: free
