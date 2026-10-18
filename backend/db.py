@@ -795,13 +795,14 @@ def get_setting(key: str):
 
 
 # ----------------------------- 初始化 / 种子 -----------------------------
-def _columns(engine, table: str) -> set:
+def _columns(engine, table: str, schema: str = None) -> set:
     """返回某表当前列名集合（兼容 SQLite / Postgres）。"""
     if USE_PG:
+        sch = schema or APP_SCHEMA
         with engine.connect() as c:
             rows = c.execute(text(
                 f"SELECT column_name FROM information_schema.columns "
-                f"WHERE table_schema='{APP_SCHEMA}' AND table_name='{table}'"
+                f"WHERE table_schema='{sch}' AND table_name='{table}'"
             )).all()
         return {r[0] for r in rows}
     with engine.connect() as c:
@@ -841,7 +842,7 @@ def _migrate() -> None:
                 c.execute(text(f"ALTER TABLE users ADD COLUMN {col} {ddl}"))
         print(f"[migrate] users 表新增列: {col}")
 
-    eq_existing = _columns(admin_engine, "equipment")
+    eq_existing = _columns(admin_engine, "equipment", ADMIN_SCHEMA)
     if "category" not in eq_existing:
         with admin_engine.begin() as c:
             if USE_PG:
