@@ -69,6 +69,9 @@ def now_str() -> str:
 def _make_engine(url: str) -> Engine:
     if not USE_PG:
         return create_engine(f"sqlite:///{os.path.join(BASE_DIR, url)}", future=True)
+    # 显式指定 pg8000 驱动（requirements 仅装 pg8000；SQLAlchemy 默认会找 psycopg2）
+    if url.startswith("postgresql://"):
+        url = "postgresql+pg8000://" + url[len("postgresql://"):]
     connect_args: dict = {}
     if "supabase.co" in url or "sslmode" in url:
         try:
