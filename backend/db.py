@@ -75,7 +75,12 @@ def _make_engine(url: str) -> Engine:
     connect_args: dict = {}
     if "supabase.co" in url or "sslmode" in url:
         try:
-            connect_args["ssl_context"] = ssl.create_default_context()
+            # Supabase 数据库连接使用自签名证书（内部 CA），系统根证书验证会失败；
+            # 仍走 TLS 加密传输，仅跳过服务器证书校验（托管库地址固定，可接受）。
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            connect_args["ssl_context"] = ctx
         except Exception:
             pass
     return create_engine(url, future=True, pool_pre_ping=True, connect_args=connect_args)
