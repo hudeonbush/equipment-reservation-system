@@ -857,6 +857,32 @@ def _migrate() -> None:
         print("[migrate] equipment 表新增列: category")
 
 
+def _sync_admin_password() -> None:
+    """设置了 ADMIN_PASSWORD 环境变量时，把现有 admin 账号密码同步为该值（幂等）。
+
+    管理员账号在首次初始化时创建，此后 _seed 不会再改其密码；
+    因此部署后再设置 ADMIN_PASSWORD 也需要能真正生效，这里在每次启动时对齐。
+    """
+    pw = (os.environ.get("ADMIN_PASSWORD") or "").strip()
+    if not pw:
+        return
+    with admin_engine.begin() as c:
+        row = c.execute(
+            select(admin_users).where(admin_users.c.username == "admin")
+        ).mappings().first()
+        if row is None:
+            return
+        target_hash = hash_pwd(pw)
+        if row["password_hash"] != target_hash:
+            c.execute(
+                update(admin_users)
+                .where(admin_users.c.id == row["id"])
+                .values(password_hash=target_hash)
+            )
+            print("[init] 已按 ADMIN_PASSWORD 同步管理员账号密码")
+    set_setting("admin_password", pw)
+
+
 def init_db() -> None:
     if USE_PG:
         for sch in (ADMIN_SCHEMA, APP_SCHEMA):
@@ -866,6 +892,7 @@ def init_db() -> None:
     app_meta.create_all(app_engine)
     _migrate()
     _seed()
+    _sync_admin_password()
 
 
 def _seed() -> None:
